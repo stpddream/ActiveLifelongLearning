@@ -19,14 +19,10 @@ class Learner():
         # print "init complete."
 
     def refine_model(self, feature, target):
-        print self.train_x.shape
-        print feature.shape
-
-        print self.train_y.shape
-        print target.shape
         self.train_x = np.vstack((self.train_x, feature))
         self.train_y = np.concatenate((self.train_y, target))
 
+        print len(self.train_x)
         self.model = self.base_learner.fit(self.train_x, self.train_y)
         return self.get_trained_size()
 

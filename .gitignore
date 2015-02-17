@@ -124,3 +124,4 @@ crashlytics-build.properties
 
 ## Data Matrix ##
 *.mat
+data/

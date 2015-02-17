@@ -12,8 +12,8 @@ from config import T
 from config import INS_SIZE
 from active_learn import comp_info_values
 from active_learn import model_uncert
-
-from random import shuffle
+from active_learn import model_score
+from numpy.random import shuffle
 
 
 
@@ -23,16 +23,17 @@ from random import shuffle
 #####################
 
 
-land_train, land_test = load_landmine()
-train_pl, init_dat = prod_init_dat(land_train, 100)
-train_pool = np.array(gen_land_pool(train_pl))
 
-print np.array(init_dat['feature'][0]).shape
-
-print np.reshape(init_dat['label'][0], init_dat['label'][0].shape[0]).shape
-
+## Process Data ##
+land_test = np.load("data/land_test")
+land_train_pl = np.load("data/land_train_pl")
+init_dat = np.load("data/land_init")
+train_pool = np.array(gen_land_pool(land_train_pl))
 shuffle(train_pool)
 
+print len(init_dat['feature'][:])
+
+## Train Initial Model ##
 models = []
 
 for t in range(0, T):
@@ -42,17 +43,16 @@ for t in range(0, T):
                 init_dat['label'][t]))
             break
         except ValueError:
+            print "value error"
             continue
 
-# for t in range(0, T):
-    # print "model ", t, models[t].get_trained_size()
 
 print "Start training..."
-print "After..."
-# print len(train_pool)
-# print values.shape
 
+### Training Until No more data available ###
+count = 20
 while train_pool.size:
+    # print "pool", len(train_pool)
     tr_size = min(INS_SIZE, len(train_pool))
     train_pool = comp_info_values(models, train_pool, model_uncert)
     sorted_dat = train_pool[np.argsort(train_pool[:, -1])[::-1]]
@@ -66,19 +66,17 @@ while train_pool.size:
         next_train_x[t].append(row[:9])
         next_train_y[t].append(row[9])
 
-    print "start training..."
     for t in range(0, T):
         if next_train_x[t]:
-            print "t is", t
-            print next_train_x[t]
             models[t].refine_model(np.array(next_train_x[t]), np.array(next_train_y[t]))
 
     train_pool = sorted_dat[INS_SIZE:, :]
+    print model_score(models, land_test)
+    if count < 0: break
+    count -= 1
 
-    break
-
-for model in models:
-    print "size ", model.get_trained_size()
+# for model in models:
+    # print "size ", model.get_trained_size()
 
 
 
