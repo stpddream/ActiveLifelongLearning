@@ -20,6 +20,7 @@ from numpy.random import shuffle
 ######## Panda ######
 # Comparing Multiple Active Learner vs ELLA + ATS vs ELLA + ATS + AL vs
 # ELLA + AL
+# This file runs Pure Multiple Active Learner
 #####################
 
 ###### Load Data ######
