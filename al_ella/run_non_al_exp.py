@@ -4,8 +4,6 @@
 from proc_data import gen_land_pool
 from learner import Learner
 from util import dat_size
-from util import models_act
-
 from util import learning_curve
 
 import pickle as pk
@@ -13,10 +11,9 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from config import T
 from config import INS_SIZE
-from active_learn import comp_info_values
-from active_learn import model_uncert
 from active_learn import model_score
 from numpy.random import shuffle
+
 
 
 
@@ -49,24 +46,32 @@ shuffle(train_pool)
 models = []
 
 for t in range(0, T):
+    # while True:
+        # try:
+            # models.append(Learner(LogisticRegression(), init_dat['feature'][t],
+                # init_dat['label'][t]))
+            # break
+        # except ValueError:
+            # print "value error"
+            # continue
     models.append(Learner(LogisticRegression(), init_dat['feature'][t],
-        init_dat['label'][t]))
+                init_dat['label'][t]))
+
 
 print "Start training..."
+
 
 print "pool", len(train_pool)
 total_pool_size = len(train_pool)
 test_acc = []
 learned_size= []
 
-
 ### Training Until No more data available ###
+count = 1000
 while train_pool.size:
-    # print "pool", len(train_pool)
+    print "pool", len(train_pool)
     tr_size = min(INS_SIZE, len(train_pool))
-    train_pool = comp_info_values(models, train_pool, model_uncert)
-    sorted_dat = train_pool[np.argsort(train_pool[:, -1])[::-1]]
-    selected = sorted_dat[:INS_SIZE, :]
+    selected = train_pool[:INS_SIZE, :]
 
     next_train_x = [[] for i in range(0, T)]
     next_train_y = [[] for i in range(0, T)]
@@ -79,21 +84,18 @@ while train_pool.size:
     for t in range(0, T):
         if next_train_x[t]:
             models[t].refine_model(np.array(next_train_x[t]), np.array(next_train_y[t]))
+    train_pool = train_pool[INS_SIZE:, :]
 
-    train_pool = sorted_dat[INS_SIZE:, :]
     acc =  model_score(models, test_dat)
     test_acc.append(acc)
     learned_size.append(total_pool_size - len(train_pool))
 
-    print acc
-    print models_act(models)
-
     # if count < 0: break
     # count -= 1
 
-# print test_acc
-# print learned_size
-learning_curve("fig.png", test_acc, learned_size)
+print test_acc
+print learned_size
+learning_curve("fig_learn.png", test_acc, learned_size)
 
 
 # for model in models:

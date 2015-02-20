@@ -14,19 +14,33 @@ class Learner():
         self.base_learner = base_learner
         self.train_x = init_x
         self.train_y = init_y
+        self.activated = True
 
-        self.model = self.base_learner.fit(self.train_x, self.train_y)
-        # print "init complete."
+        # If training data contains single label
+        try:
+            self.model = self.base_learner.fit(self.train_x, self.train_y)
+        except ValueError:
+            self.activated = False
 
     def refine_model(self, feature, target):
         self.train_x = np.vstack((self.train_x, feature))
         self.train_y = np.concatenate((self.train_y, target))
 
-        print len(self.train_x)
-        self.model = self.base_learner.fit(self.train_x, self.train_y)
+        # print len(self.train_x)
+        try:
+            self.model = self.base_learner.fit(self.train_x, self.train_y)
+            if not self.activated:
+                self.activated = True
+        except ValueError:
+            return 0
         return self.get_trained_size()
 
     def score(self, test_x, test_y):
+        if not self.activated:
+            resp = np.zeros(test_y.shape[0])
+            dif = np.subtract(resp, test_y)
+            return np.count_nonzero(dif) / test_y.shape[0]
+
         return self.model.score(test_x, test_y)
 
     def get_pool_size(self):
@@ -40,6 +54,9 @@ class Learner():
 
     def get_model_coef(self):
         return np.reshape(self.model.coef_, self.model.coef_.shape[1])
+
+    def is_activated(self):
+        return self.activated
 
     @staticmethod
     def dis(x, v):

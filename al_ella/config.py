@@ -3,7 +3,7 @@
 
 
 T = 29
-INS_SIZE = 150
+INS_SIZE = 300
 TRAIN_PERC = 0.8
 
 

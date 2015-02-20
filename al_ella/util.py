@@ -3,6 +3,7 @@
 
 from config import T
 import pickle as pk
+import matplotlib.pyplot as plt
 
 def dat_size(dat):
     total = 0
@@ -27,3 +28,16 @@ def load_init():
     test_dat = pk.load(test_f)
     test_f.close()
     print "test size", dat_size(test_dat)
+
+def learning_curve(file_name, acc, size):
+    figure = plt.figure()
+    plt.plot(size, acc)
+    plt.savefig(file_name)
+
+def models_act(models):
+    count = 0
+    for t in range(0, T):
+        if models[t].is_activated():
+            count += 1
+    return count
+

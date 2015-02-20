@@ -8,12 +8,17 @@ def comp_info_values(models, features, func):
     """
     Compute information value based on coef
     """
+
     return np.apply_along_axis(func, 1, features, models)
 
 def model_uncert(feature, models):
     # print feature
     t = feature[10] # Get the task # for the feature
     # print "comp between task", t
+    if not models[int(t)].is_activated():
+        feature[11] = 0
+        return feature
+
     feature[11] = dis(feature[:9], models[int(t)].get_model_coef())
     return feature
 
@@ -21,6 +26,8 @@ def model_uncert(feature, models):
 def dis(x, v):
     """
     Calculate the distance between point and a hyperplane v
+    v is the normal vector for the hyperplane, i.e ax + by + c = 0,
+    v = [a, b]
     """
 
     w = np.subtract(0, np.subtract(x, v))

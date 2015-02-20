@@ -15,6 +15,7 @@ def split_dat(dat, perc, mat=False):
     set_two = {'feature':[[] for i in range(0, T)], 'label':[[] for i in range(0, T)]}
 
     for t in range(0, T):
+        print "t", t
         if mat:
             task_feat = dat['feature'][:,t][0]
             task_target = dat['label'][:,t][0]
@@ -28,6 +29,7 @@ def split_dat(dat, perc, mat=False):
         set_one['label'][t] = np.reshape(y_one, y_one.shape[0])
         set_two['feature'][t] = x_two
         set_two['label'][t] = np.reshape(y_two, y_two.shape[0])
+        print y_one
 
     return set_one, set_two
 
@@ -36,6 +38,7 @@ def load_landset():
     landmine = loadmat('data/LandmineData.mat')
     return split_dat(landmine, TRAIN_PERC, mat=True)
 
+# Return init_set, pool_set
 def gen_init(train_dat, init_size):
     return split_dat(train_dat, init_size)
 
@@ -54,10 +57,21 @@ def gen_land_pool(train_dat):
         dat_ret.extend(task_dat)
     return dat_ret
 
-print "----> Loading & Splitting data..."
 
+landmine = loadmat('data/LandmineData.mat')
+
+#### Data Summary ####
+# counts = np.zeros(2)
+# for t in range(0, T):
+    # counts += np.bincount(landmine['label'][:, t][0].reshape(landmine['label'][:, t][0].shape[0]))
+# print counts
+# exit()
+
+
+print "----> Loading & Splitting data..."
 land_train, land_test = load_landset()
-pool_dat, init_dat = gen_init(land_train, 100)
+print "init dat"
+init_dat, pool_dat = gen_init(land_train, 5)
 
 print "train size", dat_size(land_train)
 print "test  size", dat_size(land_test)
