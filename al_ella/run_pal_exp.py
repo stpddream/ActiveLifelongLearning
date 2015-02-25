@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from proc_data import gen_land_pool
+from data_process import gen_land_pool
 from learner import Learner
-from util import dat_size
-from util import models_act
+from config import ITER_ENABLE
+from config import N_ITER
 
-from util import learning_curve
-
-import pickle as pk
 import numpy as np
+import util
 from sklearn.linear_model import LogisticRegression
 from config import T
 from config import INS_SIZE
@@ -18,7 +16,11 @@ from active_learn import model_uncert
 from active_learn import model_score
 from numpy.random import shuffle
 
+from util import load_test
+from util import load_init
+from util import load_pool
 
+# from sklearn import SVM
 
 ######## Panda ######
 # Comparing Multiple Active Learner vs ELLA + ATS vs ELLA + ATS + AL vs
@@ -27,20 +29,11 @@ from numpy.random import shuffle
 #####################
 
 ###### Load Data ######
-pool_f = open("data/pool", "rb")
-pool_dat = pk.load(pool_f)
-pool_f.close()
-print "pool size", dat_size(pool_dat)
+pool_dat = load_pool()
+init_dat = load_init()
+test_dat = load_test()
 
-init_f = open("data/init", "rb")
-init_dat = pk.load(init_f)
-init_f.close()
-print "init size", dat_size(init_dat)
-
-test_f = open("data/test", "rb")
-test_dat = pk.load(test_f)
-test_f.close()
-print "test size", dat_size(test_dat)
+init_size = util.dat_size(init_dat)
 
 train_pool = np.array(gen_land_pool(pool_dat))
 shuffle(train_pool)
@@ -53,13 +46,15 @@ for t in range(0, T):
         init_dat['label'][t]))
 
 print "Start training..."
+init_acc = model_score(models, test_dat)
+
 
 print "pool", len(train_pool)
 total_pool_size = len(train_pool)
-test_acc = []
-learned_size= []
+test_acc = [init_acc]
+learned_size = [init_size]
 
-
+count = N_ITER
 ### Training Until No more data available ###
 while train_pool.size:
     # print "pool", len(train_pool)
@@ -83,17 +78,20 @@ while train_pool.size:
     train_pool = sorted_dat[INS_SIZE:, :]
     acc =  model_score(models, test_dat)
     test_acc.append(acc)
-    learned_size.append(total_pool_size - len(train_pool))
+    learned_size.append(total_pool_size - len(train_pool) + init_size)
 
-    print acc
-    print models_act(models)
+    # print acc
+    # print models_act(models)
 
-    # if count < 0: break
-    # count -= 1
+    if ITER_ENABLE:
+        if count < 0: break
+        count -= 1
 
-# print test_acc
-# print learned_size
-learning_curve("fig.png", test_acc, learned_size)
+print test_acc
+print learned_size
+util.learning_curve("res/active_mult_fig.png", test_acc, learned_size)
+util.curve_to_csv("res/ac_multi.csv", test_acc, learned_size)
+
 
 
 # for model in models:

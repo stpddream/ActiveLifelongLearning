@@ -1,27 +1,48 @@
 __author__ = 'stpanda'
 
 import matplotlib.pyplot as plt
-
-
-def read_dat_file(fl):
-    data_non_str = fl.read().replace('\n', '').replace('[', '')
-    non_dat = data_non_str.split(']')[:2]
-    print non_dat
-    return non_dat[1].strip().split(), non_dat[0].strip().split()
+import csv
+import config
 
 #### Process Non active learning
-file_non = open('../res/svm_plain/svm_one.res', 'r')
-non_x, non_y = read_dat_file(file_non)
+file_non = open('res/non_ac.csv', 'r')
 
-#### Process Active Learning
-file_act = open('../res/active/svm_one.res', 'r')
-act_x, act_y = read_dat_file(file_act)
+non_ac_acc = []
+non_ac_size = []
+
+r_cnt = 0
+for row in csv.reader(file_non):
+    if r_cnt == 0:
+        non_ac_acc = row
+    else: non_ac_size = row
+    r_cnt += 1
+
+
+file_ac_multi = open('res/ac_multi.csv', 'r')
+
+ac_multi_acc = []
+ac_multi_size = []
+
+r_cnt = 0
+for row in csv.reader(file_ac_multi):
+    if r_cnt == 0:
+        ac_multi_acc = row
+    else: ac_multi_size = row
+    r_cnt += 1
+
+print ac_multi_acc
+print ac_multi_size
 
 figure = plt.figure()
-plt.plot(non_x, non_y)
-plt.plot(act_x, act_y)
+line_non_act, = plt.plot(non_ac_size, non_ac_acc, label='Non Active')
+line_act, = plt.plot(ac_multi_size, ac_multi_acc, label='Active')
+plt.legend(loc='lower right', handles=[line_non_act, line_act])
 plt.xlabel('Size of training set')
 plt.ylabel('Accuracy')
+plt.savefig('res/uncert_log_prob/' + str(config.TRAIN_PERC) + '_' + str(config.INS_SIZE) + '.png')
 plt.show()
+
+
+
 
 

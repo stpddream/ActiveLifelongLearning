@@ -14,13 +14,12 @@ def comp_info_values(models, features, func):
 def model_uncert(feature, models):
     # print feature
     t = feature[10] # Get the task # for the feature
-    # print "comp between task", t
-    if not models[int(t)].is_activated():
-        feature[11] = 0
-        return feature
-
-    feature[11] = dis(feature[:9], models[int(t)].get_model_coef())
+    feature[11] = 1.0 / logis_prob(feature[:9], models[int(t)].get_model())
     return feature
+
+def logis_prob(feature, model):
+    val = np.ndarray.min(np.absolute(np.subtract(model.predict_proba(feature), 0.5)))
+    return val
 
 
 def dis(x, v):
@@ -42,8 +41,3 @@ def model_score(models, tests):
         total_score += this_score
 
     return total_score / T
-
-
-
-
-

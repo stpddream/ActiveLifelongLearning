@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from proc_data import gen_land_pool
+from data_process import gen_land_pool
 from learner import Learner
 from util import dat_size
 from util import learning_curve
+
+import util
+
+from config import N_ITER
+from config import ITER_ENABLE
 
 import pickle as pk
 import numpy as np
@@ -14,6 +19,9 @@ from config import INS_SIZE
 from active_learn import model_score
 from numpy.random import shuffle
 
+from util import load_test
+from util import load_init
+from util import load_pool
 
 
 
@@ -24,20 +32,11 @@ from numpy.random import shuffle
 #####################
 
 ###### Load Data ######
-pool_f = open("data/pool", "rb")
-pool_dat = pk.load(pool_f)
-pool_f.close()
-print "pool size", dat_size(pool_dat)
+pool_dat = load_pool()
+init_dat = load_init()
+test_dat = load_test()
 
-init_f = open("data/init", "rb")
-init_dat = pk.load(init_f)
-init_f.close()
-print "init size", dat_size(init_dat)
-
-test_f = open("data/test", "rb")
-test_dat = pk.load(test_f)
-test_f.close()
-print "test size", dat_size(test_dat)
+init_size = dat_size(init_dat)
 
 train_pool = np.array(gen_land_pool(pool_dat))
 shuffle(train_pool)
@@ -46,30 +45,27 @@ shuffle(train_pool)
 models = []
 
 for t in range(0, T):
-    # while True:
-        # try:
-            # models.append(Learner(LogisticRegression(), init_dat['feature'][t],
-                # init_dat['label'][t]))
-            # break
-        # except ValueError:
-            # print "value error"
-            # continue
     models.append(Learner(LogisticRegression(), init_dat['feature'][t],
                 init_dat['label'][t]))
 
 
 print "Start training..."
 
-
 print "pool", len(train_pool)
 total_pool_size = len(train_pool)
 test_acc = []
 learned_size= []
 
-### Training Until No more data available ###
-count = 1000
+init_acc = model_score(models, test_dat)
+test_acc = [init_acc]
+learned_size = [init_size]
+
+
+
+### Training Until No more data available OR Reach the set N_ITER ###
+count = N_ITER
 while train_pool.size:
-    print "pool", len(train_pool)
+    # print "pool", len(train_pool)
     tr_size = min(INS_SIZE, len(train_pool))
     selected = train_pool[:INS_SIZE, :]
 
@@ -86,16 +82,18 @@ while train_pool.size:
             models[t].refine_model(np.array(next_train_x[t]), np.array(next_train_y[t]))
     train_pool = train_pool[INS_SIZE:, :]
 
-    acc =  model_score(models, test_dat)
+    acc = model_score(models, test_dat)
     test_acc.append(acc)
-    learned_size.append(total_pool_size - len(train_pool))
+    learned_size.append(total_pool_size - len(train_pool) + init_size)
 
-    # if count < 0: break
-    # count -= 1
+    if ITER_ENABLE:
+        if count < 0: break
+        count -= 1
 
 print test_acc
 print learned_size
-learning_curve("fig_learn.png", test_acc, learned_size)
+util.learning_curve("res/fig_non_active.png", test_acc, learned_size)
+util.curve_to_csv("res/non_ac.csv", test_acc, learned_size)
 
 
 # for model in models:
