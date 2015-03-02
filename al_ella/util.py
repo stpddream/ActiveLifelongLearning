@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matlab.engine
 import csv
 
+from sklearn.metrics import roc_auc_score
+
 def dat_size(dat):
     total = 0
     for t in range(0, T):
@@ -35,6 +37,9 @@ def load_test():
     print "test size", dat_size(test_dat)
     return test_dat
 
+def curve_add(acc, size):
+    plt.plot(size, acc)
+
 def learning_curve(file_name, acc, size):
     figure = plt.figure()
     plt.plot(size, acc)
@@ -46,6 +51,65 @@ def curve_to_csv(file_name, acc, size):
     writer.writerow(acc)
     writer.writerow(size)
 
+def contain_one(labels):
+    return np.bincount(labels).shape[0] != 1
+
+
+def dat_to_mat(dat):
+    for t in range(0, T):
+        dat['feature'][t] = matlab.double(dat['feature'][t].tolist())
+        lab_col = np.reshape(dat['label'][t], (dat['label'][t].shape[0], 1)) #Convert to column vector
+        dat['label'][t] = matlab.double(lab_col.tolist())
+    return dat
+
+
+def pool2mat(dat):
+    mat_x = []
+    mat_y = []
+    for t in range(0, dat.shape[0]):
+        mat_x.append(matlab.double(dat[t][:, :-3].tolist()))
+        mat_y.append(matlab.double(dat[t][:, -3].tolist()))
+
+    return mat_x, mat_y
+
+
+
+def trow2mat(task_rows):
+
+    task_mat = []
+    # if ys
+    if len(task_rows[0].shape) < 2:
+        for t in range(0, T):
+            lab_col = np.reshape(task_rows[t], (task_rows[t].shape[0], 1)) #Convert to column vector
+            task_mat.append(matlab.double(lab_col.tolist()))
+
+    # if x
+    else:
+        for t in range(0, T):
+            task_mat.append(matlab.double(task_rows[t].tolist()))
+
+    return task_mat
+
+
+def model_roc_score(learner, test_dat):
+    total_auc_score = 0.0
+
+    for t in range(0, T):
+        pred_proba = learner.predict_proba(test_dat['feature'][t], t)
+        total_auc_score += roc_auc_score(test_dat['label'][t], pred_proba[:, 1])
+
+    return total_auc_score / T
+
+
+
+def model_score(learner, tests):
+    total_score = 0.0
+
+    for t in range(0, T):
+        this_score = learner.score(tests['feature'][t], tests['label'][t], t)
+        total_score += this_score
+
+    return total_score / T
 
 
 def models_act(models):
@@ -55,20 +119,14 @@ def models_act(models):
             count += 1
     return count
 
-def contain_one(labels):
-    return np.bincount(labels).shape[0] != 1
 
-
-def dat_to_list(dat):
+def add_bias(data):
     for t in range(0, T):
-        dat['feature'][t] = dat['feature'][t].tolist()
-        dat['label'][t] = dat['label'][t].tolist()
+        bias_col = np.empty((data['feature'][t].shape[0], 1))
+        bias_col.fill(1)
+        data['feature'][t] = np.hstack((data['feature'][t], bias_col))
+    return data
 
-    return dat
-
-    # ml_feat = matlab.double(dat['feature'])
-
-
-
-
+def arr2mat(nparray):
+    return matlab.double(nparray.tolist())
 

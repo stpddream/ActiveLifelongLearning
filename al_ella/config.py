@@ -3,10 +3,10 @@
 
 
 T = 29
-INS_SIZE = 5
-TRAIN_PERC = 0.4
+INS_SIZE = 1
+TRAIN_PERC = 0.5
 
 ITER_ENABLE = False
-N_ITER = 1
+N_ITER = 80
 
 
