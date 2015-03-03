@@ -2,15 +2,25 @@
 # encoding: utf-8
 
 import numpy as np
+from learner import ELLA
+from learner import MLLearner
 from config import T
+import util
 
-def model_uncert(feature, model):
+def model_uncert(learner, feature, t):
     # return -logis_prob(feature, model)
-    return -logis_prob(feature, model)
+    return -logis_prob(learner, feature, t)
 
 
-def logis_prob(feature, model):
-    val = np.ndarray.min(np.absolute(np.subtract(model.predict_proba(feature), 0.5)))
+def logis_prob(learner, feature, t):
+    pred = learner.predict_proba(feature, t)
+
+    if isinstance(learner, MLLearner):
+        pred = pred[:, 1]
+
+    # For multi label classifier
+    # val = np.ndarray.min(np.absolute(np.subtract(pred, 0.5)))
+    val = abs(pred - 0.5)
     return val
 
 

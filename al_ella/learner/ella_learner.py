@@ -7,10 +7,6 @@ import random
 
 from sklearn.metrics import roc_auc_score
 
-
-
-
-
 def ella_score(ella_model, test_dat):
     total_score = 0.0
     for t in range(0, T):
@@ -43,7 +39,6 @@ class ELLA:
     def predict_proba(self, Xs, t):
         return self.engine.predictELLA(self.model_struct, arr2mat(Xs), t + 1)
 
-
     def score(self, Xs, Ys, t):
 
         # Matlab numbering starts from 1
@@ -61,14 +56,27 @@ class ELLA:
         self.model_struct = self.engine.dropTaskELLA(self.model_struct, t + 1)
         self.model_struct = self.engine.addTaskELLA(self.model_struct, arr2mat(self.x_train[t]), arr2mat(self.y_train[t]), t + 1)
 
+    # Not working!!
+    def get_model(self, task):
+        print self.model_struct.keys()
+        print self.model_struct['L']
+        print self.model_struct['S']
+        print self.model_struct['S'][0][task]
+        print self.model_struct['S'].size
+
+        model_params = self.engine.get_model_param(self.model_struct['L'], self.model_struct['S'], task)
+        print model_params
+        print util.matarr2list(model_params)
+        return util.matarr2list(model_params)
+
     def next_task(self, seed_dat, rand_gen=False):
         # turn seed data into matrix form (tasks sit next to each other)
-        # if rand_gen:
-            # return task_online[random.randint(0, len(task_online)) - 1]
+        select_criterion = 2
+        if rand_gen:
+            select_criterion = 1
 
         mat_x, mat_y = util.pool2mat(seed_dat)
-        TASK_ST_INFO = 2
-        task_id = self.engine.selectTaskELLA(self.model_struct, mat_x, mat_y, TASK_ST_INFO)
+        task_id = self.engine.selectTaskELLA(self.model_struct, mat_x, mat_y, select_criterion)
         return task_id
 
 

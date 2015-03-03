@@ -1,86 +1,82 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from proc_data import load_landmine
-from proc_data import gen_land_pool
-from proc_data import prod_init_dat
-from learner import Learner
+from experiment import run_ml_landmine
+from learner import MLLearner
+from learner import ELLA
+from util import dat_size
+from util import learning_curve
+import matlab.engine
 
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-from config import T
-from config import INS_SIZE
-from active_learn import comp_info_values
-from active_learn import model_uncert
-from active_learn import model_score
-from numpy.random import shuffle
+import matplotlib.pyplot as plt
 
+import util
+import config
+import experiment as exp
 
+from util import load_test
+from util import load_init
+from util import load_pool
 
-######## Panda ######
-# Comparing Multiple Active Learner vs ELLA + ATS vs ELLA + ATS + AL vs
-# ELLA + AL
-#####################
+pool_dat = load_pool()
+init_dat = load_init()
+test_dat = load_test()
 
+#############################
+###### STL Experiments ######
+#############################
 
+# print "[info]Start passive learning..."
+# test_acc_ps, learned_size_ps = run_ml_landmine(pool_dat, init_dat, test_dat, MLLearner, evaluation=exp.EVAL_ACC, do_active=False)
+# util.curve_to_csv("res/ps_stl_non.csv", test_acc_ps, learned_size_ps)
 
-## Process Data ##
-land_test = np.load("data/land_test")
-land_train_pl = np.load("data/land_train_pl")
-init_dat = np.load("data/land_init")
-train_pool = np.array(gen_land_pool(land_train_pl))
-shuffle(train_pool)
+print "[info]Start active learning..."
+test_acc_ac, learned_size_ac = run_ml_landmine(pool_dat, init_dat, test_dat, MLLearner, evaluation=exp.EVAL_ACC, do_active=True)
+util.curve_to_csv("res/acc_stl_non.csv", test_acc_ac, learned_size_ac)
 
-print len(init_dat['feature'][:])
+# figure = plt.figure()
+# line_stl_ps, = plt.plot(learned_size_ps, test_acc_ps, label='Non Active')
+# line_stl_ac, = plt.plot(learned_size_ac, test_acc_ac, label='Active')
+# plt.legend(loc='lower right', handles=[line_stl_ps, line_stl_ac])
+# plt.xlabel('Size of training set')
+# plt.ylabel('Accuracy')
+# plt.savefig('res/uncert_log_prob/' + 'acc_' + str(config.TRAIN_PERC) + '_' + str(config.INS_SIZE) + '_stl.png')
 
-## Train Initial Model ##
-models = []
+##############################
+###### ELLA Experiments ######
+##############################
 
-for t in range(0, T):
-    while True:
-        try:
-            models.append(Learner(LogisticRegression(), init_dat['feature'][t],
-                init_dat['label'][t]))
-            break
-        except ValueError:
-            print "value error"
-            continue
+# # Set up environment
+# print "Starting matlab..."
+# eng = matlab.engine.start_matlab()
 
+# ELLA_DIR = "/home/stpanda/Dropbox/STDreamSoft/Academics/SeniorThesis/Projects/al_ella/lib/ELLAv1.0"
+# eng.addpath("/home/stpanda/Dropbox/STDreamSoft/Academics/SeniorThesis/Projects/al_ella/ml")
+# eng.addpath(eng.genpath(ELLA_DIR))
 
-print "Start training..."
+# # run experiment
+# test_acc_el_ps, learned_size_el_ps = run_ml_landmine(pool_dat, init_dat, test_dat, ELLA,
+        # evaluation=exp.EVAL_ACC, engine=eng, do_active=False, rand_task=True)
+# test_acc_el_att, learned_size_el_att = run_ml_landmine(pool_dat, init_dat, test_dat, ELLA,
+        # evaluation=exp.EVAL_ACC, engine=eng, do_active=False, rand_task=False)
 
-### Training Until No more data available ###
-count = 20
-while train_pool.size:
-    # print "pool", len(train_pool)
-    tr_size = min(INS_SIZE, len(train_pool))
-    train_pool = comp_info_values(models, train_pool, model_uncert)
-    sorted_dat = train_pool[np.argsort(train_pool[:, -1])[::-1]]
-    selected = sorted_dat[:INS_SIZE, :]
-
-    next_train_x = [[] for i in range(0, T)]
-    next_train_y = [[] for i in range(0, T)]
-
-    for row in selected:
-        t = int(row[10])
-        next_train_x[t].append(row[:9])
-        next_train_y[t].append(row[9])
-
-    for t in range(0, T):
-        if next_train_x[t]:
-            models[t].refine_model(np.array(next_train_x[t]), np.array(next_train_y[t]))
-
-    train_pool = sorted_dat[INS_SIZE:, :]
-    print model_score(models, land_test)
-    if count < 0: break
-    count -= 1
-
-# for model in models:
-    # print "size ", model.get_trained_size()
+# util.curve_to_csv("res/ps_ella.csv", test_acc_el_ps, learned_size_el_ps)
+# util.curve_to_csv("res/att_ella.csv", test_acc_el_att, learned_size_el_att)
 
 
+# test_acc_el_ac, learned_size_el_ac = run_ml_landmine(pool_dat, init_dat, test_dat, ELLA, evaluation=exp.EVAL_ACC, engine=eng, do_active=True)
 
+# figure = plt.figure()
+# line_stl_ps, = plt.plot(learned_size_el_ps, test_acc_el_ps, label='Passive ELLA')
+# line_stl_ac, = plt.plot(learned_size_el_att, test_acc_el_att, label='Active')
+# plt.legend(loc='lower right', handles=[line_stl_ps, line_stl_ac])
+# plt.xlabel('Size of training set')
+# plt.ylabel('Accuracy')
+# plt.savefig('res/uncert_log_prob/' + 'acc_' + str(config.TRAIN_PERC) + '_' + str(config.INS_SIZE) + '_el.png')
 
+# print test_acc_el_ps
+# print learned_size_el_ps
+# print test_acc_el_ac
+# print learned_size_el_ac
 
-
-
+# print "done"

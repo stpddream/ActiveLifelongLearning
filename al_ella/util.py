@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import matlab.engine
 import csv
 
-from sklearn.metrics import roc_auc_score
-
 def dat_size(dat):
     total = 0
     for t in range(0, T):
@@ -62,7 +60,6 @@ def dat_to_mat(dat):
         dat['label'][t] = matlab.double(lab_col.tolist())
     return dat
 
-
 def pool2mat(dat):
     mat_x = []
     mat_y = []
@@ -91,26 +88,6 @@ def trow2mat(task_rows):
     return task_mat
 
 
-def model_roc_score(learner, test_dat):
-    total_auc_score = 0.0
-
-    for t in range(0, T):
-        pred_proba = learner.predict_proba(test_dat['feature'][t], t)
-        total_auc_score += roc_auc_score(test_dat['label'][t], pred_proba[:, 1])
-
-    return total_auc_score / T
-
-
-
-def model_score(learner, tests):
-    total_score = 0.0
-
-    for t in range(0, T):
-        this_score = learner.score(tests['feature'][t], tests['label'][t], t)
-        total_score += this_score
-
-    return total_score / T
-
 
 def models_act(models):
     count = 0
@@ -129,4 +106,13 @@ def add_bias(data):
 
 def arr2mat(nparray):
     return matlab.double(nparray.tolist())
+
+# Just matlab vector
+def matarr2list(matarr):
+    print matarr
+    list = []
+    for ele in matarr:
+        list.append(ele)
+    return list
+
 

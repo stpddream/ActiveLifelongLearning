@@ -8,13 +8,14 @@ from query_strategy import model_uncert
 
 
 class Professor:
-    def __init__(self, init_dat, train_dat, multi_t=False, random=True, do_active=False):
+    def __init__(self, init_dat, train_dat, multi_t=False, random=True, do_active=False, rand_task=False):
         self.trained_x = init_dat['feature']
         self.trained_y = init_dat['label']
 
         self.train_pool = gen_land_pool(train_dat, multi_t)
         self.pool_size = util.dat_size(train_dat)
         self.multi_task = multi_t;
+        self.rand_task = rand_task
 
         # Keep track of tasks that have training instances
         # In matlab format where all tasks start with one
@@ -48,7 +49,7 @@ class Professor:
         if self.multi_task:
 
             print "len of tasks", len(self.task_online)
-            t = int(learner.next_task(self.train_pool)) - 1 # MINUS ONE BECAUSE MATLAB START WITH ONE!!
+            t = int(learner.next_task(self.train_pool, rand_gen=self.rand_task)) - 1 # MINUS ONE BECAUSE MATLAB START WITH ONE!!
             print "next task", t
             print self.train_pool.shape
 
@@ -82,8 +83,9 @@ def comp_info_values(learner, features, func):
     Compute information value based on coef
     """
 
-    for row in features:
+    for cnt, row in enumerate(features):
+        print cnt
         t = int(row[-2])
-        row[-1] = func(row[:-3], learner.get_model(t))
+        row[-1] = func(learner, row[:-3], t)
 
     return features
