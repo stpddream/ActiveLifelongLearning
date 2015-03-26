@@ -10,6 +10,12 @@ from config import TRAIN_PERC
 from util import dat_size
 import util
 
+
+def load_dat(filename):
+    mat = loadmat('data/' + filename)
+    return split_dat(mat, TRAIN_PERC, mat=True)
+
+
 def split_dat(dat, perc, mat=False):
 
     set_one = {'feature':[[] for i in range(0, T)], 'label':[[] for i in range(0, T)]}
@@ -39,9 +45,11 @@ def split_dat(dat, perc, mat=False):
     return set_one, set_two
 
 
+
 def load_landset():
     landmine = loadmat('data/LandmineData.mat')
     return split_dat(landmine, TRAIN_PERC, mat=True)
+
 
 # Return init_set, pool_set
 def gen_init(train_dat, init_size):
@@ -65,3 +73,10 @@ def gen_land_pool(train_dat, multi_t=False):
         else: dat_ret.extend(task_dat)
 
     return np.array(dat_ret)
+
+
+def lab_count(dat):
+    count = 0
+    for t in range(0, T):
+        count += np.bincount(dat['label'][:, t][0].reshape(dat['label'][:, t][0].shape[0]))
+    print count

@@ -5,6 +5,7 @@ from config import T
 from sklearn.metrics import roc_auc_score
 from ella_learner import ELLA
 
+
 def model_roc_score(learner, test_dat):
     total_auc_score = 0.0
 

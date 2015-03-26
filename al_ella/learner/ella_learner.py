@@ -7,12 +7,14 @@ import random
 
 from sklearn.metrics import roc_auc_score
 
+### Deprecated Leave for compatible reason only
 def ella_score(ella_model, test_dat):
     total_score = 0.0
     for t in range(0, T):
         total_score += ella_model.score(test_dat['feature'][t], test_dat['label'][t], t)
     return total_score / T
 
+### Deprecated Leave for compatible reason only
 def ella_auc_score(ella_model, test_dat):
     total_score = 0.0
     for t in range(0, T):
@@ -20,6 +22,7 @@ def ella_auc_score(ella_model, test_dat):
         total_score += roc_auc_score(test_dat['label'][t], preds)
 
     return total_score / T
+
 
 class ELLA:
 
@@ -33,20 +36,29 @@ class ELLA:
             self.x_train.append(init_dat['feature'][t])
             self.y_train.append(init_dat['label'][t])
 
-        self.model_struct = engine.init_model(util.dat_to_mat(init_dat))
+        self.model_struct = engine.init_model(util.dat2mat(init_dat))
 
 
     def predict_proba(self, Xs, t):
         return self.engine.predictELLA(self.model_struct, arr2mat(Xs), t + 1)
 
-    def score(self, Xs, Ys, t):
 
+    # Test only
+    def get_trained_size(self):
+        total = 0
+        for t in range(0, T):
+            total += self.y_train[t].shape[0]
+        return total
+
+
+    def score(self, Xs, Ys, t):
         # Matlab numbering starts from 1
         preds = self.engine.predictELLA(self.model_struct, arr2mat(Xs), t + 1)
         pred_lab = [1 if (pred[0] - 0.5) > 0 else 0 for pred in preds]
         res = [1 if (pred_lab[i] - Ys[i] == 0) else 0 for i in range(0, len(preds))]
 
         return float(sum(res)) / len(preds)
+
 
     def refine_model(self, Xs, Ys, t):
         # Update training instances
@@ -55,6 +67,7 @@ class ELLA:
 
         self.model_struct = self.engine.dropTaskELLA(self.model_struct, t + 1)
         self.model_struct = self.engine.addTaskELLA(self.model_struct, arr2mat(self.x_train[t]), arr2mat(self.y_train[t]), t + 1)
+
 
     # Not working!!
     def get_model(self, task):
@@ -69,14 +82,22 @@ class ELLA:
         print util.matarr2list(model_params)
         return util.matarr2list(model_params)
 
+
     def next_task(self, seed_dat, rand_gen=False):
         # turn seed data into matrix form (tasks sit next to each other)
-        select_criterion = 2
+        select_criterion = 4
         if rand_gen:
-            select_criterion = 1
+            print "random selecting..."
+            select_criterion = -1
+            # return random.randint(1, seed_dat.shape[0])
 
+        # print "selection cri", select_criterion
         mat_x, mat_y = util.pool2mat(seed_dat)
         task_id = self.engine.selectTaskELLA(self.model_struct, mat_x, mat_y, select_criterion)
+
+        if select_criterion == -1:
+            return random.randint(1, seed_dat.shape[0])
+
         return task_id
 
 
